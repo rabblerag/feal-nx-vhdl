@@ -2,8 +2,11 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 entity k is
+generic (N : integer := 32);
 port(
 k: in std_logic_vector(127 downto 0);
+clk: in std_logic;
+rst: in std_logic;
 k_even: out std_logic_vector(15 downto 0);
 k_odd: out std_logic_vector(15 downto 0)
 );
@@ -18,16 +21,52 @@ architecture easy of k is
   );
   end component;
 
-  type type_1Dx1D is array(1 to 3) of std_logic_vector(31 downto 0);
-  signal qr : type_1Dx1D;
-  signal a0, b0: std_logic_vector(31 downto 0);
-
+  -- type type_1Dx1D is array(0 to 2) of std_logic_vector(31 downto 0);
+  -- signal q_0 : type_1Dx1D;
+  signal q_sel: natural range 0 to 2 := 0;
+  
+  signal a_reg, b_reg, d_reg, q, xor_1, xor_2, fk_out: std_logic_vector(31 downto 0);
+    
   begin
-    a0 <= k(127 downto 96); 
-    b0 <= k(95 downto 64);
 
-    qr(1) <= k(63 downto 32) xor k(31 downto 0);
-    qr(2) <= k(63 downto 32);
-    qr(3) <= k(31 downto 0);
-    f <= f3 & f2 & f1 & f0;
-end easy;
+    xor_1 <= d_reg xor b_reg;
+    xor_2 <= xor_1 xor q;
+
+    with q_sel select
+      q <= k(63 downto 32) xor k(31 downto 0) when 0,
+           k(63 downto 32)                    when 1,
+           k(31 downto 0)                     when others;
+    
+    
+
+U0: fk port map (a => a_reg , b => xor_2 , f => fk_out);
+
+    k_even <= fk_out(31 downto 16);
+    k_odd  <= fk_out(15 downto 0);
+
+    k_r: process(clk, rst)
+    
+    begin
+    if rst = '1' then
+      a_reg <= k(127 downto 96);
+      b_reg <= k(95 downto 64);
+      d_reg <= (others => '0'); 
+      q_sel <= 0;
+    
+    elsif rising_edge(clk) then
+        if(q_sel = 2) then q_sel <= 0;
+        else q_sel <= q_sel + 1;
+        end if;
+        
+        b_reg <= fk_out;
+        a_reg <= b_reg;
+        d_reg <= a_reg;
+        
+    end if;
+    end process;
+    end easy;
+
+
+-- add_force {/k/k} -radix hex {0123456789abcdef0123456789abcdef 0ns}
+-- add_force {/k/clk} -radix hex {0 0ns} {1 500000ps} -repeat_every 1000000ps
+-- add_force {/k/rst} -radix hex {1 0ns}

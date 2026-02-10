@@ -31,12 +31,12 @@ architecture easy of f is
   signal f0, f1, f2, f3: std_logic_vector(7 downto 0);
 
   begin
-    a0 <= a(7 downto 0);
-    a1 <= a(15 downto 8);
-    a2 <= a(23 downto 16);
-    a3 <= a(31 downto 24);
-    b0 <= b(7 downto 0);
-    b1 <= b(15 downto 8);
+    a3 <= a(7 downto 0);
+    a2 <= a(15 downto 8);
+    a1 <= a(23 downto 16);
+    a0 <= a(31 downto 24);
+    b1 <= b(7 downto 0);
+    b0 <= b(15 downto 8);
 
     s1_internal <= (b0 xor a1) xor a0;
     s0_internal <= (b1 xor a2) xor a3;
@@ -45,5 +45,5 @@ U2: s0 port map (x1 => s0_internal, x2 => f1, y => f2);
 U0: s0 port map (x1 => a0, x2 => f1, y => f0);
 U3: s1 port map (x1 => a3, x2 => f2, y => f3);
 
-    f <= f3 & f2 & f1 & f0;
+    f <= f0 & f1 & f2 & f3;
 end easy;

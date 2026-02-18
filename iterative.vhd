@@ -3,7 +3,6 @@ use ieee.std_logic_1164.all;
 
 -- Iterative calculation hardware is the same for encryption and decryption
 entity iterative is
-    generic (N : integer := 32);
     port(
         -- When encrypting, msb_half_input=L0 and lsb_half_input=R0
         -- When decrypting, msb_half_input=RN and lsb_half_input=LN

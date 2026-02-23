@@ -33,7 +33,6 @@ architecture rtl of decrypt is
     end component;
 
     component iterative is
-    generic (N : integer := 32);
     port(
         -- When encrypting, msb_half_input=L0 and lsb_half_input=R0
         -- When decrypting, msb_half_input=RN and lsb_half_input=LN
@@ -51,7 +50,7 @@ architecture rtl of decrypt is
 begin
 
 U0: preprocess port map(
-    input => plaintext, msb_half => msb_half_wires(0), lsb_half => lsb_half_wires(0),
+    input => ciphertext, msb_half => msb_half_wires(0), lsb_half => lsb_half_wires(0),
     extended_key => extended_key((N+4)*16 to (N+8)*16-1)  
 );
 
@@ -67,7 +66,7 @@ end generate;
 U_N: postprocess port map(
     msb_half => lsb_half_wires(N), lsb_half => msb_half_wires(N),
     extended_key => extended_key(N*16 to (N+4)*16-1),
-    output => ciphertext
+    output => plaintext
 );
 
 

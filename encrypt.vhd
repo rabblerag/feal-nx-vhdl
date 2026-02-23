@@ -33,7 +33,6 @@ architecture rtl of encrypt is
     end component;
 
     component iterative is
-    generic (N : integer := 32);
     port(
         -- When encrypting, msb_half_input=L0 and lsb_half_input=R0
         -- When decrypting, msb_half_input=RN and lsb_half_input=LN

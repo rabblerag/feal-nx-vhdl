@@ -1,15 +1,16 @@
-library library IEEE;
+library IEEE;
 use IEEE.std_logic_1164.all;
 
 entity encrypt_decrypt is
     generic (N: integer := 32);
     port(
-            clk, rst, encrypt_bar, done_flag: in std_logic; -- encrypt_bar = 0 -> Encryption; encrypt_bar = 1 -> Decryption
+            clk, rst, encrypt_bar, enable_in_out_ff: in std_logic; -- encrypt_bar = 0 -> Encryption; encrypt_bar = 1 -> Decryption
             input_text: in std_logic_vector(63 downto 0);
             extended_key: in std_logic_vector(0 to (N+8)*16-1);
-            ciphertext: out std_logic_vector(63 downto 0)
+            r: in natural range 0 to N ; -- Round number
+            output_text: out std_logic_vector(63 downto 0)
         );
-end encypt_decrypt;
+end encrypt_decrypt;
 
 architecture rtl of encrypt_decrypt is
     
@@ -47,7 +48,9 @@ architecture rtl of encrypt_decrypt is
     end component;
 
     signal preprocess_key, postprocess_key : std_logic_vector(0 to 63);
-    signal input_text_reg, output_text_reg, preprocess_reg,
+    signal input_text_reg, preprocess_reg, postprocess_reg, iter_reg : std_logic_vector(63 downto 0);
+    signal iter_in, preprocess_out, iter_out, postprocess_out : std_logic_vector(63 downto 0);
+    signal r_reg: natural range 0 to N;
 
 
 begin
@@ -68,44 +71,62 @@ begin
 
     
 U_pre: preprocess port map(
-    input => plaintext, msb_half => msb_half_wires(0), lsb_half => lsb_half_wires(0),
+    input => input_text_reg, msb_half => preprocess_out(63 downto 32), lsb_half => preprocess_out(31 downto 0),
     extended_key => preprocess_key 
 );
 
 
+    with r_reg select
+    iter_in <= preprocess_reg when 0,
+                iter_reg when others;
+
 U_iter : iterative port map (
-    msb_half_input => msb_half_wires(r-1), lsb_half_input => lsb_half_wires(r-1),
-    extended_key => extended_key((r-1)*16 to r*16-1), msb_half_output => msb_half_wires(r),
-    lsb_half_output => lsb_half_wires(r)
+    msb_half_input => iter_in(63 downto 32), lsb_half_input => iter_in(31 downto 0),
+    extended_key => extended_key((r_reg-1)*16 to r_reg*16-1), msb_half_output => iter_out(63 downto 32),
+    lsb_half_output => iter_out(31 downto 0)
     );
 
 
 U_post: postprocess port map(
-    msb_half => lsb_half_wires(N), lsb_half => msb_half_wires(N),
+    msb_half => iter_reg(31 downto 0), lsb_half => iter_reg(63 downto 32),
     extended_key => postprocess_key,
-    output => ciphertext
+    output => postprocess_out
 );
 
+output_text <= postprocess_reg;
 
 -- Flip-flops
 
-d: process(clk, rst) 
+d_with_en: process(clk, rst) 
 
 begin
 
     if rst = '1' then
         input_text_reg <= (others => '0');
-        output_text_reg <= (others => '0');
-        preprocess_reg <= (others => '0');
         postprocess_reg <= (others => '0');
-        iterative_reg <= (others => '0');
-    elsif rising_edge(clk) then
-
-
+    elsif rising_edge(clk) and enable_in_out_ff = '1' then
+        input_text_reg <= input_text;
+        postprocess_reg <= postprocess_out;
     end if;
 
 
-end d;
+end process;
+
+d: process(clk, rst)
+
+begin
+
+    if rst = '1' then
+        preprocess_reg <= (others => '0');
+        iter_reg <= (others => '0');
+        r_reg <= 0;
+    elsif rising_edge(clk) then
+        preprocess_reg <= preprocess_out;
+        iter_reg <= iter_out;
+        r_reg <= r;
+    end if;
+
+end process;
 
 
     

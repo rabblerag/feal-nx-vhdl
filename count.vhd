@@ -18,18 +18,6 @@ entity count is
 end count;
 
 architecture rtl of count is
-    -- component k is
-    -- generic (N : integer := 32);
-    -- port(
-    -- k: in std_logic_vector(127 downto 0);
-    -- clk: in std_logic;
-    -- rst: in std_logic;
-    -- k_even: out std_logic_vector(15 downto 0);
-    -- k_odd: out std_logic_vector(15 downto 0);
-    -- extended_k: out std_logic_vector(0 to (N+8)*16-1);
-    -- ready: out std_logic
-    -- );
-    -- end component;
 
     component encrypt_decrypt is
     generic (N: integer := 32);
@@ -44,20 +32,13 @@ architecture rtl of count is
     end component;
 
     signal counter: natural range 0 to N-1;
-    signal post_flag: std_logic;
+    signal post_control: std_logic_vector(1 downto 0);
     signal enable_in: std_logic;
     signal enable_out: std_logic;
     signal enable_in_out: std_logic;
     signal input_text_reg: std_logic_vector(63 downto 0);
-    signal process_output: std_logic_vector(63 downto 0);
+
     begin
-
--- U0: k port map(
---     k => keytest, clk => clk, rst => rst, k_even => test_even, k_odd => test_odd,
---     extended_k => extension, ready => test_ready
--- );
-
--- signal preflag: std_logic;
     
     enable_in <= '1' when input_text /= input_text_reg else '0';
     enable_in_out <= enable_in xor enable_out;
@@ -67,7 +48,7 @@ k_r: process(clk, rst)
     begin
     if rst = '1' then
       counter <= 0;
-      post_flag <= '0';
+      post_control <= "00";
       enable_out <= '0';
       input_text_reg <= (others => '1');
     
@@ -76,13 +57,20 @@ k_r: process(clk, rst)
         if (enable_in = '1') then
             input_text_reg <= input_text;
             counter <=  0;
-        elsif post_flag = '1' then
+        end if;
+
+        if(enable_out = '1') then
+            enable_out <= '0';
+        end if;
+
+        if post_control(0) = '1' then
             enable_out <= '1';
+            post_control <= "10";
         else
             if (counter /= N-1) then
               counter <= counter + 1;
-            else 
-              post_flag <= '1';
+            elsif post_control(1) = '0' then 
+                post_control(0) <= '1';
             end if;    
         end if;    
     end if;

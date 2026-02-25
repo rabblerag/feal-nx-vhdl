@@ -26,7 +26,7 @@ architecture easy of k is
   end component;
 
   signal q_sel: natural range 0 to 2 := 0;
-  signal counter: natural range 0 to N/2+5 := 0;
+  signal counter: natural range 1 to N/2+5 := 1;
   
   signal a_reg, b_reg, d_reg, q, xor_1, xor_2, fk_out: std_logic_vector(31 downto 0);
     

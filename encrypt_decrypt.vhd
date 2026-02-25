@@ -52,6 +52,7 @@ architecture rtl of encrypt_decrypt is
     signal iter_in, preprocess_out, iter_out, postprocess_out : std_logic_vector(63 downto 0);
     signal r_reg: natural range 0 to N-1;
 
+    signal rounder: std_logic_vector(0 to 15);
 
 begin
 
@@ -80,9 +81,11 @@ U_pre: preprocess port map(
     iter_in <= preprocess_reg when 0,
                 iter_reg when others;
 
+rounder <= extended_key(r_reg*16 to (r_reg+1)*16-1);
+
 U_iter : iterative port map (
     msb_half_input => iter_in(63 downto 32), lsb_half_input => iter_in(31 downto 0),
-    extended_key => extended_key(r_reg*16 to (r_reg+1)*16-1), msb_half_output => iter_out(63 downto 32),
+    extended_key => rounder, msb_half_output => iter_out(63 downto 32),
     lsb_half_output => iter_out(31 downto 0)
     );
 

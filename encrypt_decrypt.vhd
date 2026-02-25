@@ -7,7 +7,7 @@ entity encrypt_decrypt is
             clk, rst, encrypt_bar, enable_in_out_ff: in std_logic; -- encrypt_bar = 0 -> Encryption; encrypt_bar = 1 -> Decryption
             input_text: in std_logic_vector(63 downto 0);
             extended_key: in std_logic_vector(0 to (N+8)*16-1);
-            r: in natural range 0 to N ; -- Round number
+            r: in natural range 0 to N-1; -- Round number
             output_text: out std_logic_vector(63 downto 0)
         );
 end encrypt_decrypt;
@@ -50,7 +50,7 @@ architecture rtl of encrypt_decrypt is
     signal preprocess_key, postprocess_key : std_logic_vector(0 to 63);
     signal input_text_reg, preprocess_reg, postprocess_reg, iter_reg : std_logic_vector(63 downto 0);
     signal iter_in, preprocess_out, iter_out, postprocess_out : std_logic_vector(63 downto 0);
-    signal r_reg: natural range 0 to N;
+    signal r_reg: natural range 0 to N-1;
 
 
 begin
@@ -82,7 +82,7 @@ U_pre: preprocess port map(
 
 U_iter : iterative port map (
     msb_half_input => iter_in(63 downto 32), lsb_half_input => iter_in(31 downto 0),
-    extended_key => extended_key((r_reg-1)*16 to r_reg*16-1), msb_half_output => iter_out(63 downto 32),
+    extended_key => extended_key(r_reg*16 to (r_reg+1)*16-1), msb_half_output => iter_out(63 downto 32),
     lsb_half_output => iter_out(31 downto 0)
     );
 

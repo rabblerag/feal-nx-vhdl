@@ -10,7 +10,8 @@ entity count is
             input_text: in std_logic_vector(63 downto 0);
             extended_key: in std_logic_vector(0 to (N+8)*16-1);
             output_text: out std_logic_vector(63 downto 0);
-            idling: out std_logic
+            idling: out std_logic  -- When idling = '1', unit is ready for new computation
+                                   -- input changes during idling = '0' will be ignored
         );
 end count;
 

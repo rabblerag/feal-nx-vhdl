@@ -4,7 +4,7 @@ use IEEE.std_logic_1164.all;
 entity encrypt_decrypt is
     generic (N: integer := 32);
     port(
-            clk, rst, encrypt_bar, enable_in_out_ff: in std_logic; -- encrypt_bar = 0 -> Encryption; encrypt_bar = 1 -> Decryption
+            clk, rst, encrypt_bar: in std_logic; -- encrypt_bar = 0 -> Encryption; encrypt_bar = 1 -> Decryption
             input_text: in std_logic_vector(63 downto 0);
             extended_key: in std_logic_vector(0 to (N+8)*16-1);
             r: in natural range 0 to N-1; -- Round number
@@ -14,7 +14,7 @@ end encrypt_decrypt;
 
 architecture rtl of encrypt_decrypt is
     
-        component preprocess is
+    component preprocess is
     port(
         input, extended_key: in std_logic_vector(63 downto 0);
         -- When encrypting, msb_half=L0 and lsb_half=R0
@@ -50,7 +50,6 @@ architecture rtl of encrypt_decrypt is
     signal preprocess_key, postprocess_key : std_logic_vector(0 to 63);
     signal input_text_reg, preprocess_reg, postprocess_reg, iter_reg : std_logic_vector(63 downto 0);
     signal iter_in, preprocess_out, iter_out, postprocess_out : std_logic_vector(63 downto 0);
-    signal r_reg: natural range 0 to N-1;
 
     signal rounder: std_logic_vector(0 to 15);
 
@@ -69,19 +68,16 @@ begin
     postprocess_key <= extended_key((N+4)*16 to (N+8)*16-1) when '0',
                        extended_key(N*16 to (N+4)*16-1) when '1',
                       (others => 'Z') when others;
-
-    
+                      
 U_pre: preprocess port map(
     input => input_text_reg, msb_half => preprocess_out(63 downto 32), lsb_half => preprocess_out(31 downto 0),
     extended_key => preprocess_key 
 );
 
+    iter_in <= preprocess_reg when (encrypt_bar = '0' and r = 0) or (encrypt_bar = '1' and r = N-1)
+                            else iter_reg;
 
-    with r_reg select
-    iter_in <= preprocess_reg when 0,
-                iter_reg when others;
-
-rounder <= extended_key(r_reg*16 to (r_reg+1)*16-1);
+rounder <= extended_key(r*16 to (r+1)*16-1);
 
 U_iter : iterative port map (
     msb_half_input => iter_in(63 downto 32), lsb_half_input => iter_in(31 downto 0),
@@ -100,37 +96,22 @@ output_text <= postprocess_reg;
 
 -- Flip-flops
 
-d_with_en: process(clk, rst) 
+d: process(clk, rst) 
 
 begin
-
     if rst = '1' then
         input_text_reg <= (others => '0');
-        postprocess_reg <= (others => '0');
-    elsif rising_edge(clk) and enable_in_out_ff = '1' then
-        input_text_reg <= input_text;
-        postprocess_reg <= postprocess_out;
-    end if;
-
-
-end process;
-
-d: process(clk, rst)
-
-begin
-
-    if rst = '1' then
         preprocess_reg <= (others => '0');
+        postprocess_reg <= (others => '0');
         iter_reg <= (others => '0');
-        r_reg <= 0;
-    elsif rising_edge(clk) then
+    elsif rising_edge(clk)  then
+        input_text_reg <= input_text;
         preprocess_reg <= preprocess_out;
+        postprocess_reg <= postprocess_out;
         iter_reg <= iter_out;
-        r_reg <= r;
     end if;
 
+
 end process;
-
-
     
 end architecture rtl;

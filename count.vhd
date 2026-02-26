@@ -56,7 +56,11 @@ k_r: process(clk, rst)
     elsif rising_edge(clk) then
         if (enable_in = '1') then
             input_text_reg <= input_text;
-            counter <=  0;
+            if encrypt_bar = '0' then
+                counter <= 0;       -- Encryption
+            else
+                counter <= N-1;     -- Decryption
+            end if;
         end if;
 
         if(enable_out = '1') then
@@ -67,11 +71,21 @@ k_r: process(clk, rst)
             enable_out <= '1';
             post_control <= "10";
         else
-            if (counter /= N-1) then
-              counter <= counter + 1;
-            elsif post_control(1) = '0' then 
-                post_control(0) <= '1';
-            end if;    
+            if encrypt_bar = '0' then
+                -- Encryption: count upwards
+                if counter /= N-1 then
+                    counter <= counter + 1;
+                elsif post_control(1) = '0' then
+                    post_control(0) <= '1';
+                end if;
+            else
+                -- Decryption: count backwards
+                if counter /= 0 then
+                    counter <= counter - 1;
+                elsif post_control(1) = '0' then
+                    post_control(0) <= '1';
+                end if;
+            end if;
         end if;    
     end if;
     end process;

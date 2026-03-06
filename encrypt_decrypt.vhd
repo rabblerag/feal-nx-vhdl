@@ -4,10 +4,10 @@ use IEEE.std_logic_1164.all;
 entity encrypt_decrypt is
     generic (N: integer := 32);
     port(
-            clk, rst, encrypt_bar: in std_logic; -- encrypt_bar = 0 -> Encryption; encrypt_bar = 1 -> Decryption
+            clk, rst, encrypt_bar, enable: in std_logic; -- encrypt_bar = 0 -> Encryption; encrypt_bar = 1 -> Decryption
             input_text: in std_logic_vector(63 downto 0);
             extended_key: in std_logic_vector(0 to (N+8)*16-1);
-            r: in natural range 0 to N-1; -- Round number
+            r: in natural range 1 to N; -- Round number
             output_text: out std_logic_vector(63 downto 0)
         );
 end encrypt_decrypt;
@@ -48,7 +48,7 @@ architecture rtl of encrypt_decrypt is
     end component;
 
     signal preprocess_key, postprocess_key : std_logic_vector(0 to 63);
-    signal input_text_reg, preprocess_reg, postprocess_reg, iter_reg : std_logic_vector(63 downto 0);
+    signal preprocess_reg, postprocess_reg, iter_reg : std_logic_vector(63 downto 0);
     signal iter_in, preprocess_out, iter_out, postprocess_out : std_logic_vector(63 downto 0);
 
     signal rounder: std_logic_vector(0 to 15);
@@ -70,14 +70,14 @@ begin
                       (others => 'Z') when others;
                       
 U_pre: preprocess port map(
-    input => input_text_reg, msb_half => preprocess_out(63 downto 32), lsb_half => preprocess_out(31 downto 0),
+    input => input_text, msb_half => preprocess_out(63 downto 32), lsb_half => preprocess_out(31 downto 0),
     extended_key => preprocess_key 
 );
 
-    iter_in <= preprocess_reg when (encrypt_bar = '0' and r = 0) or (encrypt_bar = '1' and r = N-1)
-                            else iter_reg;
+iter_in <= preprocess_reg when (encrypt_bar = '0' and r = 1) or (encrypt_bar = '1' and r = N)
+                        else iter_reg;
 
-rounder <= extended_key(r*16 to (r+1)*16-1);
+rounder <= extended_key((r-1)*16 to r*16-1);
 
 U_iter : iterative port map (
     msb_half_input => iter_in(63 downto 32), lsb_half_input => iter_in(31 downto 0),
@@ -100,17 +100,14 @@ d: process(clk, rst)
 
 begin
     if rst = '1' then
-        input_text_reg <= (others => '0');
         preprocess_reg <= (others => '0');
         postprocess_reg <= (others => '0');
         iter_reg <= (others => '0');
-    elsif rising_edge(clk)  then
-        input_text_reg <= input_text;
+    elsif rising_edge(clk) and enable = '1' then
         preprocess_reg <= preprocess_out;
         postprocess_reg <= postprocess_out;
         iter_reg <= iter_out;
     end if;
-
 
 end process;
     

@@ -100,15 +100,19 @@ d: process(clk, rst)
 
 begin
     if rst = '1' then
-        input_text_reg <= (others => '0');
         preprocess_reg <= (others => '0');
         postprocess_reg <= (others => '0');
         iter_reg <= (others => '0');
     elsif rising_edge(clk) and enable = '1' then
-        input_text_reg <= input_text;
         preprocess_reg <= preprocess_out;
         postprocess_reg <= postprocess_out;
         iter_reg <= iter_out;
+    end if;
+
+    if rst = '1' then
+        input_text_reg <= (others => '0');
+    elsif rising_edge(clk) and (enable = '1' and r = 1) then 
+        input_text_reg <= input_text;
     end if;
 
 

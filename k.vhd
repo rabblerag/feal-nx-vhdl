@@ -21,6 +21,7 @@ architecture rtl of k is
   end component;
   
   signal a_reg, b_reg, d_reg, a_in, b_in, d_in, q, xor_out, fk_out: std_logic_vector(31 downto 0);
+  signal k_reg : std_logic_vector(127 downto 0);
   signal extended_key_reg : std_logic_vector(0 to (N+8)*16-1);
     
   begin
@@ -28,16 +29,16 @@ architecture rtl of k is
     xor_out <= (d_reg xor b_reg) xor q;
 
     with (counter mod 3) select
-      q <= k(63 downto 32) xor k(31 downto 0) when 1,
-           k(63 downto 32)                    when 2,
-           k(31 downto 0)                     when others;
+      q <= k_reg(63 downto 32) xor k_reg(31 downto 0) when 1,
+           k_reg(63 downto 32)                    when 2,
+           k_reg(31 downto 0)                     when others;
 
     with counter select
-      a_in <= k(127 downto 96) when 1,
+      a_in <= k_reg(127 downto 96) when 1,
               b_reg when others;
     
     with counter select
-      b_in <= k(95 downto 64) when 1,
+      b_in <= k_reg(95 downto 64) when 1,
               fk_out when others;
     
     with counter select
@@ -65,6 +66,14 @@ begin
       extended_key_reg <= extended_key_reg(0 to (N+6)*16-1) & fk_out;
 
   end if;
+
+  if rst = '1' then
+    k_reg <= (others => '0');
+  elsif rising_edge(clk) and (enable = '1' and counter = 1) then
+      k_reg <= k;
+  end if;
+    
+
 end process;
 
 extended_k <= extended_key_reg;

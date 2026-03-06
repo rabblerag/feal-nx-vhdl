@@ -78,10 +78,10 @@ begin
     case state is
         when idle => done <= '0'; key_start <= '0'; enc_dec_start <= '0'; ready <= '1';
         when key_sched => done <= '0'; key_start <= '1'; enc_dec_start <= '0'; ready <= '0';
-        when preproc => done <= '0'; key_start <= '0'; enc_dec_start <= '0'; ready <= '0';
+        when preproc => done <= '0'; key_start <= '0'; enc_dec_start <= '1'; ready <= '0';
         when enc => done <= '0'; key_start <= '0'; enc_dec_start <= '1'; ready <= '0';
         when dec => done <= '0'; key_start <= '0'; enc_dec_start <= '1'; ready <= '0';
-        when postproc => done <= '0'; key_start <= '0'; enc_dec_start <= '0'; ready <= '0';
+        when postproc => done <= '0'; key_start <= '0'; enc_dec_start <= '1'; ready <= '0';
         when finished => done <= '1'; key_start <= '0'; enc_dec_start <= '0'; ready <= '1';
     end case;
 

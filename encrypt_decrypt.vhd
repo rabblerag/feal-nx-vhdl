@@ -48,7 +48,7 @@ architecture rtl of encrypt_decrypt is
     end component;
 
     signal preprocess_key, postprocess_key : std_logic_vector(0 to 63);
-    signal input_text_reg, preprocess_reg, postprocess_reg, iter_reg : std_logic_vector(63 downto 0);
+    signal preprocess_reg, postprocess_reg, iter_reg : std_logic_vector(63 downto 0);
     signal iter_in, preprocess_out, iter_out, postprocess_out : std_logic_vector(63 downto 0);
 
     signal rounder: std_logic_vector(0 to 15);
@@ -70,12 +70,12 @@ begin
                       (others => 'Z') when others;
                       
 U_pre: preprocess port map(
-    input => input_text_reg, msb_half => preprocess_out(63 downto 32), lsb_half => preprocess_out(31 downto 0),
+    input => input_text, msb_half => preprocess_out(63 downto 32), lsb_half => preprocess_out(31 downto 0),
     extended_key => preprocess_key 
 );
 
-    iter_in <= preprocess_reg when (encrypt_bar = '0' and r = 1) or (encrypt_bar = '1' and r = N)
-                            else iter_reg;
+iter_in <= preprocess_reg when (encrypt_bar = '0' and r = 1) or (encrypt_bar = '1' and r = N)
+                        else iter_reg;
 
 rounder <= extended_key((r-1)*16 to r*16-1);
 
@@ -108,13 +108,6 @@ begin
         postprocess_reg <= postprocess_out;
         iter_reg <= iter_out;
     end if;
-
-    if rst = '1' then
-        input_text_reg <= (others => '0');
-    elsif rising_edge(clk) and (enable = '1' and r = 1) then 
-        input_text_reg <= input_text;
-    end if;
-
 
 end process;
     
